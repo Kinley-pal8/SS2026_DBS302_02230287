@@ -47,19 +47,18 @@ MongoDB’s data modelling philosophy encourages designing schemas around how da
 
 The guiding principle applied in this practical is:
 
-> *Embed when data is always accessed together and bounded in size. Reference when data is shared, reused, or could grow without bound.*
-> 
+> _Embed when data is always accessed together and bounded in size. Reference when data is shared, reused, or could grow without bound._
 
 ### 2.2 Collections Overview
 
 The schema consists of four collections:
 
-| Collection | Purpose |
-| --- | --- |
-| `users` | Stores customer profiles and address information |
-| `categories` | Stores product category hierarchy |
-| `products` | Stores the product catalog with variable attributes |
-| `orders` | Stores customer orders with embedded line items |
+| Collection   | Purpose                                             |
+| ------------ | --------------------------------------------------- |
+| `users`      | Stores customer profiles and address information    |
+| `categories` | Stores product category hierarchy                   |
+| `products`   | Stores the product catalog with variable attributes |
+| `orders`     | Stores customer orders with embedded line items     |
 
 ### 2.3 Embedding vs. Referencing Decisions
 
@@ -67,7 +66,7 @@ The schema consists of four collections:
 
 Order items (the individual products within an order) are **embedded** directly inside each order document as an array. This decision is justified for the following reasons:
 
-- Order items are always read together with their parent order — there is no use case where only the items are retrieved without the order.
+- Order items are always read together with their parent order - there is no use case where only the items are retrieved without the order.
 - The number of items per order is bounded and small in practice, avoiding the risk of unbounded document growth.
 - Embedding avoids the need for a join operation (`$lookup`) on every order retrieval, which significantly reduces read latency at scale.
 - Historical accuracy is preserved: product names and prices at the time of purchase are stored within the order. Even if the product’s price changes later, the order record remains correct.
@@ -89,7 +88,7 @@ Categories are stored in a separate collection and referenced from `products` vi
 
 ### 2.4 Attribute Pattern for Products
 
-Product catalogs in e-commerce are inherently heterogeneous — a laptop has different attributes (RAM, processor) than a shirt (size, material). MongoDB’s flexible schema accommodates this naturally.
+Product catalogs in e-commerce are inherently heterogeneous, a laptop has different attributes (RAM, processor) than a shirt (size, material). MongoDB’s flexible schema accommodates this naturally.
 
 The **Attribute Pattern** is applied by storing product-specific attributes in a nested `attributes` object with key-value pairs. This avoids creating sparse, mostly-null columns (as would be required in a relational schema) and allows new attribute types to be added per product without a schema migration.
 
@@ -135,9 +134,9 @@ db.users.insertMany([
       line1: "Building 12",
       city: "Thimphu",
       country: "Bhutan",
-      postalCode: "11001"
+      postalCode: "11001",
     },
-    createdAt: new Date("2026-04-18T08:00:00Z")
+    createdAt: new Date("2026-04-18T08:00:00Z"),
   },
   {
     name: "Sonam Choden",
@@ -147,10 +146,10 @@ db.users.insertMany([
       line1: "Flat 3B",
       city: "Phuntsholing",
       country: "Bhutan",
-      postalCode: "21001"
+      postalCode: "21001",
     },
-    createdAt: new Date("2026-04-19T10:30:00Z")
-  }
+    createdAt: new Date("2026-04-19T10:30:00Z"),
+  },
 ]);
 ```
 
@@ -163,8 +162,18 @@ const electronicsId = ObjectId();
 const accessoriesId = ObjectId();
 
 db.categories.insertMany([
-  { _id: electronicsId, name: "Electronics", slug: "electronics", parentCategoryId: null },
-  { _id: accessoriesId, name: "Accessories", slug: "accessories", parentCategoryId: electronicsId }
+  {
+    _id: electronicsId,
+    name: "Electronics",
+    slug: "electronics",
+    parentCategoryId: null,
+  },
+  {
+    _id: accessoriesId,
+    name: "Accessories",
+    slug: "accessories",
+    parentCategoryId: electronicsId,
+  },
 ]);
 ```
 
@@ -183,9 +192,14 @@ db.products.insertMany([
     price: 129.99,
     currency: "USD",
     stock: 200,
-    attributes: { brand: "Acme Audio", color: "black", wireless: true, batteryLifeHours: 24 },
+    attributes: {
+      brand: "Acme Audio",
+      color: "black",
+      wireless: true,
+      batteryLifeHours: 24,
+    },
     tags: ["audio", "wireless", "headphones"],
-    createdAt: new Date("2026-04-18T10:00:00Z")
+    createdAt: new Date("2026-04-18T10:00:00Z"),
   },
   // ... (USB-C Cable and Mechanical Keyboard)
 ]);
@@ -203,15 +217,25 @@ db.orders.insertMany([
     userId: tashi._id,
     status: "PAID",
     items: [
-      { productId: headphonesId, productName: "Wireless Bluetooth Headphones",
-        unitPrice: 129.99, quantity: 2, lineTotal: 259.98 },
-      { productId: cableId, productName: "USB-C Cable 1m",
-        unitPrice: 9.99, quantity: 1, lineTotal: 9.99 }
+      {
+        productId: headphonesId,
+        productName: "Wireless Bluetooth Headphones",
+        unitPrice: 129.99,
+        quantity: 2,
+        lineTotal: 259.98,
+      },
+      {
+        productId: cableId,
+        productName: "USB-C Cable 1m",
+        unitPrice: 9.99,
+        quantity: 1,
+        lineTotal: 9.99,
+      },
     ],
     grandTotal: 269.97,
     currency: "USD",
     createdAt: new Date("2026-04-19T15:30:00Z"),
-    paymentMethod: "CARD"
+    paymentMethod: "CARD",
   },
   // ... (Sonam's order)
 ]);
@@ -237,25 +261,29 @@ db.orders.aggregate([
   {
     $group: {
       _id: {
-        year:  { $year: "$createdAt" },
+        year: { $year: "$createdAt" },
         month: { $month: "$createdAt" },
-        day:   { $dayOfMonth: "$createdAt" }
+        day: { $dayOfMonth: "$createdAt" },
       },
       totalRevenue: { $sum: "$grandTotal" },
-      orderCount:   { $sum: 1 }
-    }
+      orderCount: { $sum: 1 },
+    },
   },
   {
     $project: {
       _id: 0,
-      date: { $dateFromParts: {
-        year: "$_id.year", month: "$_id.month", day: "$_id.day"
-      }},
+      date: {
+        $dateFromParts: {
+          year: "$_id.year",
+          month: "$_id.month",
+          day: "$_id.day",
+        },
+      },
       totalRevenue: 1,
-      orderCount: 1
-    }
+      orderCount: 1,
+    },
   },
-  { $sort: { date: 1 } }
+  { $sort: { date: 1 } },
 ]);
 ```
 
@@ -280,13 +308,13 @@ db.orders.aggregate([
   {
     $group: {
       _id: "$items.productId",
-      productName:   { $first: "$items.productName" },
-      totalRevenue:  { $sum: "$items.lineTotal" },
-      totalQuantity: { $sum: "$items.quantity" }
-    }
+      productName: { $first: "$items.productName" },
+      totalRevenue: { $sum: "$items.lineTotal" },
+      totalQuantity: { $sum: "$items.quantity" },
+    },
   },
   { $sort: { totalRevenue: -1 } },
-  { $limit: 5 }
+  { $limit: 5 },
 ]);
 ```
 
@@ -308,32 +336,32 @@ db.orders.aggregate([
   {
     $group: {
       _id: "$userId",
-      totalOrders:   { $sum: 1 },
-      totalSpent:    { $sum: "$grandTotal" },
+      totalOrders: { $sum: 1 },
+      totalSpent: { $sum: "$grandTotal" },
       avgOrderValue: { $avg: "$grandTotal" },
       minOrderValue: { $min: "$grandTotal" },
-      maxOrderValue: { $max: "$grandTotal" }
-    }
+      maxOrderValue: { $max: "$grandTotal" },
+    },
   },
   {
     $lookup: {
-      from:         "users",
-      localField:   "_id",
+      from: "users",
+      localField: "_id",
       foreignField: "_id",
-      as:           "user"
-    }
+      as: "user",
+    },
   },
   { $unwind: "$user" },
   {
     $project: {
       _id: 0,
-      userName:      "$user.name",
-      totalOrders:   1,
-      totalSpent:    1,
-      avgOrderValue: 1
-    }
+      userName: "$user.name",
+      totalOrders: 1,
+      totalSpent: 1,
+      avgOrderValue: 1,
+    },
   },
-  { $sort: { totalSpent: -1 } }
+  { $sort: { totalSpent: -1 } },
 ]);
 ```
 
@@ -353,24 +381,24 @@ db.orders.aggregate([
 db.products.aggregate([
   {
     $lookup: {
-      from:         "categories",
-      localField:   "categoryId",
+      from: "categories",
+      localField: "categoryId",
       foreignField: "_id",
-      as:           "category"
-    }
+      as: "category",
+    },
   },
   { $unwind: "$category" },
   {
     $project: {
       _id: 0,
-      name:               1,
-      price:              1,
+      name: 1,
+      price: 1,
       "attributes.brand": 1,
       "attributes.color": 1,
-      categoryName:       "$category.name"
-    }
+      categoryName: "$category.name",
+    },
   },
-  { $sort: { categoryName: 1, name: 1 } }
+  { $sort: { categoryName: 1, name: 1 } },
 ]);
 ```
 
@@ -395,7 +423,7 @@ The indexes created in this practical are aligned with the four most common quer
 ```jsx
 db.orders.createIndex(
   { userId: 1, createdAt: -1 },
-  { name: "idx_orders_user_createdAt" }
+  { name: "idx_orders_user_createdAt" },
 );
 ```
 
@@ -414,7 +442,7 @@ The ascending `userId` field handles the equality filter efficiently, while the 
 ```jsx
 db.orders.createIndex(
   { status: 1, createdAt: -1 },
-  { name: "idx_orders_status_createdAt" }
+  { name: "idx_orders_status_createdAt" },
 );
 ```
 
@@ -427,7 +455,7 @@ This index applies the **ESR (Equality → Sort → Range)** compound index desi
 ```jsx
 db.products.createIndex(
   { categoryId: 1, price: 1 },
-  { name: "idx_products_category_price" }
+  { name: "idx_products_category_price" },
 );
 ```
 
@@ -445,19 +473,21 @@ db.products.find({ categoryId: electronicsId }).sort({ price: 1 });
 db.products.createIndex(
   { name: "text", tags: "text" },
   {
-    name:    "idx_products_text",
-    weights: { name: 10, tags: 5 }
-  }
+    name: "idx_products_text",
+    weights: { name: 10, tags: 5 },
+  },
 );
 ```
 
 The `weights` option assigns higher relevance scores to matches in the `name` field than in `tags`, allowing results to be ranked by relevance:
 
 ```jsx
-db.products.find(
-  { $text: { $search: "wireless keyboard" } },
-  { score: { $meta: "textScore" }, name: 1, price: 1 }
-).sort({ score: { $meta: "textScore" } });
+db.products
+  .find(
+    { $text: { $search: "wireless keyboard" } },
+    { score: { $meta: "textScore" }, name: 1, price: 1 },
+  )
+  .sort({ score: { $meta: "textScore" } });
 ```
 
 ### 5.6 Verifying Indexes
@@ -479,12 +509,12 @@ db.products.getIndexes();
 
 MongoDB’s `explain("executionStats")` method exposes the query execution plan and runtime statistics. The key fields to inspect are:
 
-| Field | Meaning |
-| --- | --- |
-| `winningPlan.stage` | `COLLSCAN` (no index, slow) or `IXSCAN` (uses index, fast) |
-| `totalDocsExamined` | Number of documents read from disk |
-| `totalKeysExamined` | Number of index entries scanned |
-| `executionTimeMillis` | Total query execution time in milliseconds |
+| Field                 | Meaning                                                    |
+| --------------------- | ---------------------------------------------------------- |
+| `winningPlan.stage`   | `COLLSCAN` (no index, slow) or `IXSCAN` (uses index, fast) |
+| `totalDocsExamined`   | Number of documents read from disk                         |
+| `totalKeysExamined`   | Number of index entries scanned                            |
+| `executionTimeMillis` | Total query execution time in milliseconds                 |
 
 A well-optimized query minimizes `totalDocsExamined` and avoids `COLLSCAN`.
 
@@ -493,9 +523,10 @@ A well-optimized query minimizes `totalDocsExamined` and avoids `COLLSCAN`.
 The following query was used to demonstrate the before-and-after impact of indexing:
 
 ```jsx
-db.orders.find(
-  { status: "PAID", createdAt: { $gte: new Date("2026-04-19") } }
-).sort({ createdAt: -1 }).explain("executionStats");
+db.orders
+  .find({ status: "PAID", createdAt: { $gte: new Date("2026-04-19") } })
+  .sort({ createdAt: -1 })
+  .explain("executionStats");
 ```
 
 ### 6.3 Before Indexing - COLLSCAN
@@ -516,7 +547,7 @@ Running `explain()` without the index produced the following plan characteristic
 
 ```bash
 ecommerce;> db.orders.dropIndex("idx_orders_status_createdAt");
-| 
+|
 | db.orders.find(
 |   { status: "PAID", createdAt: { $gte: new Date("2026-04-19") } }
 | ).sort({ createdAt: -1 }).explain("executionStats");
@@ -650,7 +681,7 @@ The index was recreated:
 ```jsx
 db.orders.createIndex(
   { status: 1, createdAt: -1 },
-  { name: "idx_orders_status_createdAt" }
+  { name: "idx_orders_status_createdAt" },
 );
 ```
 
@@ -798,12 +829,12 @@ ecommerce;> db.orders.find(
 
 ### 6.5 Comparison Summary
 
-| Metric | Without Index | With Index |
-| --- | --- | --- |
-| Winning Plan Stage | COLLSCAN | IXSCAN |
-| Total Docs Examined | All documents | Only matching documents |
-| Execution Time | Higher | Lower |
-| Index Used | None | `idx_orders_status_createdAt` |
+| Metric              | Without Index | With Index                    |
+| ------------------- | ------------- | ----------------------------- |
+| Winning Plan Stage  | COLLSCAN      | IXSCAN                        |
+| Total Docs Examined | All documents | Only matching documents       |
+| Execution Time      | Higher        | Lower                         |
+| Index Used          | None          | `idx_orders_status_createdAt` |
 
 The results confirm that creating a compound index aligned with the query’s filter and sort fields eliminates the collection scan and substantially improves query performance. At small data sizes the difference may appear marginal; however, under production workloads with thousands or millions of documents, the performance difference between `COLLSCAN` and `IXSCAN` becomes critical.
 
@@ -817,7 +848,7 @@ This practical provided hands-on experience with several important MongoDB conce
 
 **Schema Design Decisions:** The distinction between embedding and referencing became clear through concrete examples. Embedding order items inside order documents rather than creating a separate `orderItems` collection produces a much simpler read path at the cost of some redundancy. This trade-off is justified by the access pattern.
 
-**The Aggregation Framework:** Constructing multi-stage pipelines demonstrated the power of processing data incrementally. The `$unwind` stage in particular was noteworthy — it is necessary whenever individual array elements need to be aggregated independently, such as computing revenue per product across all embedded order items.
+**The Aggregation Framework:** Constructing multi-stage pipelines demonstrated the power of processing data incrementally. The `$unwind` stage in particular was noteworthy - it is necessary whenever individual array elements need to be aggregated independently, such as computing revenue per product across all embedded order items.
 
 **The ESR Principle:** Designing compound indexes with Equality fields first, Sort fields second, and Range fields last is a non-obvious but impactful practice. Understanding why this ordering matters because equality filters reduce candidates before the sort is applied deepens understanding of how B-tree indexes work.
 
@@ -831,10 +862,10 @@ One challenge encountered was the loss of `ObjectId` variable values between `mo
 
 ## 8. References
 
-- MongoDB Documentation. (2024). *Data Modeling Introduction*. https://www.mongodb.com/docs/manual/core/data-modeling-introduction/
-- MongoDB Documentation. (2024). *Aggregation Pipeline*. https://www.mongodb.com/docs/maal/core/aggregation-pipeline/
-- MongoDB Documentation. (2024). *Indexing Strategies*. https://www.mongodb.com/docs/manual/applications/indexes/
-- MongoDB Documentation. (2024). *Explain Results*. https://www.mongodb.com/docs/manual/reference/explain-results/
-- Bradshaw, S., Brazil, E., & Chodorow, K. (2019). *MongoDB: The Definitive Guide* (3rd ed.). O’Reilly Media.
+- MongoDB Documentation. (2024). _Data Modeling Introduction_. https://www.mongodb.com/docs/manual/core/data-modeling-introduction/
+- MongoDB Documentation. (2024). _Aggregation Pipeline_. https://www.mongodb.com/docs/maal/core/aggregation-pipeline/
+- MongoDB Documentation. (2024). _Indexing Strategies_. https://www.mongodb.com/docs/manual/applications/indexes/
+- MongoDB Documentation. (2024). _Explain Results_. https://www.mongodb.com/docs/manual/reference/explain-results/
+- Bradshaw, S., Brazil, E., & Chodorow, K. (2019). _MongoDB: The Definitive Guide_ (3rd ed.). O’Reilly Media.
 
 ---
