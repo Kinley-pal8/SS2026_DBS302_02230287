@@ -7,10 +7,7 @@
 **Module:** DBS302 - NoSQL Database Management  
 **Practical:** 6 - Securing Redis and MongoDB  
 **Part:** B - MongoDB Security  
-**Student Name:** _(Your Name)_  
-**Student ID:** _(Your ID)_  
-**Date:** 05 May 2026  
-**Instructor:** _(Instructor Name)_
+
 
 ---
 

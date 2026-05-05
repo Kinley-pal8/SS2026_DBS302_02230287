@@ -4,9 +4,9 @@
 
 ---
 
-**Module:** DBS302 - NoSQL Database Management
-**Practical:** 6 - Part A
-**Topic:** Securing Redis with ACL, RBAC, and TLS Encryption
+**Module:** DBS302 - NoSQL Database Management  
+**Practical:** 6 - Securing Redis and MongoDB  
+**Part:** Part A - Securing Redis with ACL, RBAC, and TLS Encryption
 
 ---
 
